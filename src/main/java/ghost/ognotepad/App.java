@@ -1,6 +1,6 @@
 package ghost.ognotepad;
 
-import ghost.ognotepad.frontend.gui.GUI;
+import ghost.ognotepad.frontend.GUI;
 
 import javafx.application.Application;
 import javafx.stage.Stage;
