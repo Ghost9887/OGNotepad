@@ -1,6 +1,6 @@
 package ghost.chess;
 
-import ghost.chess.gui.GUI;
+import ghost.chess.frontend.gui.GUI;
 
 import javafx.application.Application;
 import javafx.stage.Stage;

@@ -1,4 +1,4 @@
-package ghost.chess.gui;
+package ghost.chess.frontend.gui;
 
 import javafx.scene.Scene;
 import javafx.scene.text.Text;
