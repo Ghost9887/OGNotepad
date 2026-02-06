@@ -20,6 +20,7 @@ import javafx.scene.text.FontWeight;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyCode;
+import javafx.scene.input.ScrollEvent;
 import javafx.geometry.Pos;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
@@ -32,24 +33,41 @@ import java.util.Optional;
 
 import ghost.ognotepad.backend.*;
 
+
+//TODO: FEATURES TO ADD 
+/*
+ *  1. Overall refactor
+ *  2. Fix it so it starts in the middle
+ *  3. Add to edit => {Select All, Print Time, Find, Paste, Copy, Cut}
+ *  4. Add to view => {Toggle Line break horizontal}
+ *  5. Open new Window 
+ *  6. Proper undo/redo
+ *  7. Settings page (Fonts, DarkMode, LightMode, Default Width, Default Height, Default font size)
+ *  8. Dark/light mode switcher
+ *  9. Fullscreen (doesn't work)
+ *  10. Config file to store settings
+ *  11. Print File
+ *  ?. New Files open in a new Tab maybe????
+ */
+
 public class GUI {
 
     private final Stage primaryStage;
-    private final int defaultWidth = 1000;
-    private final int defaultHeight = 800;
+    private int defaultWidth = 1000;
+    private int defaultHeight = 800;
     private int row = 0;
     private int column = 0;
     private int count = 0;
-    private int size = 12;
+    private int fontSize = 12;
 
-    private final TextArea area = createTextArea();
+    private TextArea area = createTextArea();
 
-    private final Label rowLabel = new Label("Row: 1    ");
-    private final Label columnLabel = new Label("Label: 0    ");
-    private final Label countLabel = new Label("Count: 0    ");
-    private final Label sizeLabel = new Label("Size: 12");
+    private Label rowLabel = new Label("Row: 1");
+    private Label columnLabel = new Label("Label: 0");
+    private Label countLabel = new Label("Count: 0");
+    private Label fontSizeLabel = new Label("Font Size: 12");
 
-    private final Label fileLabel = new Label("");
+    private Label fileLabel = new Label("");
     private String originalContent = "";
 
     public GUI(Stage primaryStage) {
@@ -60,22 +78,36 @@ public class GUI {
         primaryStage.setTitle("OGNotepad");
 
         VBox root = new VBox();
+
         fileLabel.setPadding(new Insets(0, 0, 0, 10));
+
         VBox topBar = createTopBar();
         HBox bottomBar = createBottomBar();
         VBox.setVgrow(area, Priority.ALWAYS);
         root.getChildren().addAll(topBar, fileLabel, area, bottomBar);
+
         Scene scene = new Scene(root, defaultWidth, defaultHeight);
+        //this is for the zooming with scroll wheel
+        scene.addEventFilter(ScrollEvent.SCROLL, event -> {
+            if (event.isControlDown()) {
+                if (event.getDeltaY() > 0) {
+                    zoomIn();
+                } else if (event.getDeltaY() < 0) {
+                    zoomOut();
+                }
+                event.consume();
+            }
+        });
+
         primaryStage.setScene(scene);
         primaryStage.show();
     }
 
     private HBox createBottomBar() {
-        HBox box = new HBox();
+        HBox box = new HBox(60);
         box.setPadding(new Insets(5, 0, 0, 10));
         box.setPrefWidth(defaultWidth);
-        Label encoding = new Label("    UTF-8   ");
-        box.getChildren().addAll(rowLabel, columnLabel, countLabel, encoding, sizeLabel);
+        box.getChildren().addAll(rowLabel, columnLabel, countLabel, fontSizeLabel);
         return box;
     }
 
@@ -86,8 +118,9 @@ public class GUI {
         area.setStyle(
             "-fx-focus-color: -fx-control-inner-background ; -fx-faint-focus-color: -fx-control-inner-background ;"
         );
-        area.setFont(Font.font("Consolas", FontWeight.NORMAL, size));
+        area.setFont(Font.font("Consolas", FontWeight.NORMAL, fontSize));
         area.caretPositionProperty().addListener(this::updateBottomBar);
+        
         return area;
     }
 
@@ -95,41 +128,42 @@ public class GUI {
         MenuBar parent = new MenuBar();
 
         Menu file = new Menu("File");
-        MenuItem newFile = new MenuItem("New File   ctrl+n");
+        MenuItem newFile = new MenuItem("New File");
         newFile.setOnAction(event -> {
             newFile();   
         });
         newFile.setAccelerator(new KeyCodeCombination(KeyCode.N, KeyCombination.CONTROL_DOWN));
-        MenuItem newWindow = new MenuItem("New Window   ctrl+shift+n");
-        MenuItem save = new MenuItem("Save  ctrl+s");
+        MenuItem newWindow = new MenuItem("New Window");
+
+        MenuItem save = new MenuItem("Save");
         save.setOnAction(event -> {
             saveFile();   
         });
         save.setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN));
 
-        MenuItem open = new MenuItem("Open  ctrl+o");
+        MenuItem open = new MenuItem("Open");
         open.setOnAction(event -> {
             loadFile();   
         });
         open.setAccelerator(new KeyCodeCombination(KeyCode.O, KeyCombination.CONTROL_DOWN));
 
         file.getItems().addAll(newFile, newWindow, save, open);
-        Menu edit = new Menu("Edit");
 
+        Menu edit = new Menu("Edit");
         Menu view = new Menu("View");
-        MenuItem zoom = new MenuItem("Zoom    ctrl+scrlUp");
+        MenuItem zoom = new MenuItem("Zoom");
+        zoom.setAccelerator(new KeyCodeCombination(KeyCode.PAGE_UP, KeyCombination.CONTROL_DOWN));
         zoom.setOnAction(event -> { 
             zoomIn(); 
         });
-        MenuItem unzoom = new MenuItem("Zoom out    ctrl+scrlDown");
+        MenuItem unzoom = new MenuItem("Zoom out");
+        unzoom.setAccelerator(new KeyCodeCombination(KeyCode.PAGE_DOWN, KeyCombination.CONTROL_DOWN));
         unzoom.setOnAction(event -> {
             zoomOut();
         });
         
         view.getItems().addAll(zoom, unzoom);
-        Menu help = new Menu("Help");
-
-        parent.getMenus().addAll(file, edit, view, help);
+        parent.getMenus().addAll(file, edit, view);
 
         VBox box = new VBox();
         box.setSpacing(10);
@@ -149,13 +183,13 @@ public class GUI {
         int lastNewline = text.lastIndexOf('\n', caret - 1);
         column = (lastNewline == -1) ? caret : caret - lastNewline - 1;
 
-        rowLabel.setText("Row: " + row + "    ");
-        columnLabel.setText("Column: " + column + "    ");
+        rowLabel.setText("Row: " + row);
+        columnLabel.setText("Column: " + column);
         countLabel.setText("Count: " + text.length());
     }
 
     private void newFile() {
-        if (!checkChange()) {
+        if (checkChange()) {
             fileLabel.setText("");
             area.setText("");
         }else {
@@ -183,10 +217,7 @@ public class GUI {
     }
 
     private boolean checkChange() {
-        if (originalContent.equals(area.getText())) {
-            return false;
-        }
-        return true;
+        return originalContent.equals(area.getText());
     }
 
     private boolean saveFile() {
@@ -219,7 +250,7 @@ public class GUI {
             case Code.Error(String error) -> {
                 Alert a = new Alert(AlertType.ERROR);           
                 a.setTitle("Failed to save file");
-                a.setHeaderText("Could'nt save file: " + fullName);
+                a.setHeaderText("Couldn't save file: " + fullName);
                 a.setContentText("Error: " + error);
                 a.show();   
                 return false;
@@ -246,29 +277,38 @@ public class GUI {
                 case Code.Error(String error) -> {
                     Alert a = new Alert(AlertType.ERROR);           
                     a.setTitle("Failed to load file");
-                    a.setHeaderText("Could'nt load file: " + selectedFile.getAbsolutePath());
+                    a.setHeaderText("Couldn't load file: " + selectedFile.getAbsolutePath());
                     a.setContentText("Error: " + error);
                     a.show();
                 }
-                default -> {
-                }
+                default -> {}
             }
         }
     }
 
     private void zoomIn() {
-        if (size < 150) {
-            size++;
-            sizeLabel.setText("Size: " + size);
-            area.setFont(Font.font("Consolas", FontWeight.NORMAL, size));
+        if (fontSize < 150) {
+            fontSize++;
+            fontSizeLabel.setText("Font Size: " + fontSize);
+            area.setFont(Font.font("Consolas", FontWeight.NORMAL, fontSize));
+            refreshCaret();
         }
     }
 
     private void zoomOut() {
-        if (size > 1) {
-            size--;
-            sizeLabel.setText("Size: " + size);
-            area.setFont(Font.font("Consolas", FontWeight.NORMAL, size));
+        if (fontSize > 1) {
+            fontSize--;
+            fontSizeLabel.setText("Font Size: " + fontSize);
+            area.setFont(Font.font("Consolas", FontWeight.NORMAL, fontSize));
+            refreshCaret();
         }
+    }
+    
+    private void refreshCaret() {
+        int pos = area.getCaretPosition();
+
+        //add a text so it updates the curosr size (doesnt do this when updating the font)
+        area.setText(area.getText() + "");
+        area.positionCaret(pos);
     }
 }
