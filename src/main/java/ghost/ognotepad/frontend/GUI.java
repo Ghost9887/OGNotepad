@@ -17,6 +17,9 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
+import javafx.scene.input.KeyCode;
 import javafx.geometry.Pos;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
@@ -34,7 +37,6 @@ public class GUI {
     private final Stage primaryStage;
     private final int defaultWidth = 1000;
     private final int defaultHeight = 800;
-    private final int fontSize = 16;
     private int row = 0;
     private int column = 0;
     private int count = 0;
@@ -84,32 +86,47 @@ public class GUI {
         area.setStyle(
             "-fx-focus-color: -fx-control-inner-background ; -fx-faint-focus-color: -fx-control-inner-background ;"
         );
-        area.setFont(Font.font("Consolas", FontWeight.NORMAL, fontSize));
+        area.setFont(Font.font("Consolas", FontWeight.NORMAL, size));
         area.caretPositionProperty().addListener(this::updateBottomBar);
         return area;
     }
 
     private VBox createTopBar() {
         MenuBar parent = new MenuBar();
-        Menu file = new Menu("File");
 
+        Menu file = new Menu("File");
         MenuItem newFile = new MenuItem("New File   ctrl+n");
         newFile.setOnAction(event -> {
             newFile();   
         });
+        newFile.setAccelerator(new KeyCodeCombination(KeyCode.N, KeyCombination.CONTROL_DOWN));
         MenuItem newWindow = new MenuItem("New Window   ctrl+shift+n");
         MenuItem save = new MenuItem("Save  ctrl+s");
         save.setOnAction(event -> {
             saveFile();   
         });
+        save.setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN));
+
         MenuItem open = new MenuItem("Open  ctrl+o");
         open.setOnAction(event -> {
             loadFile();   
         });
-        file.getItems().addAll(newFile, newWindow, save, open);
+        open.setAccelerator(new KeyCodeCombination(KeyCode.O, KeyCombination.CONTROL_DOWN));
 
+        file.getItems().addAll(newFile, newWindow, save, open);
         Menu edit = new Menu("Edit");
+
         Menu view = new Menu("View");
+        MenuItem zoom = new MenuItem("Zoom    ctrl+scrlUp");
+        zoom.setOnAction(event -> { 
+            zoomIn(); 
+        });
+        MenuItem unzoom = new MenuItem("Zoom out    ctrl+scrlDown");
+        unzoom.setOnAction(event -> {
+            zoomOut();
+        });
+        
+        view.getItems().addAll(zoom, unzoom);
         Menu help = new Menu("Help");
 
         parent.getMenus().addAll(file, edit, view, help);
@@ -157,6 +174,9 @@ public class GUI {
                         fileLabel.setText("");
                         area.setText("");
                     }
+                }else if (result.get() == cancel) {
+                    fileLabel.setText("");
+                    area.setText("");
                 }
             }
         }
@@ -193,6 +213,7 @@ public class GUI {
         switch (code) {
             case Code.Success(String paylaod) -> {
                 fileLabel.setText(fullName.toString());
+                originalContent = area.getText();
                 return true;
             }
             case Code.Error(String error) -> {
@@ -211,7 +232,7 @@ public class GUI {
 
     private void loadFile() {
         FileChooser chooser = new FileChooser();
-        chooser.setTitle("Save File");
+        chooser.setTitle("Open File");
         File selectedFile = chooser.showOpenDialog(primaryStage);
 
         if (selectedFile != null) {
@@ -232,6 +253,22 @@ public class GUI {
                 default -> {
                 }
             }
+        }
+    }
+
+    private void zoomIn() {
+        if (size < 150) {
+            size++;
+            sizeLabel.setText("Size: " + size);
+            area.setFont(Font.font("Consolas", FontWeight.NORMAL, size));
+        }
+    }
+
+    private void zoomOut() {
+        if (size > 1) {
+            size--;
+            sizeLabel.setText("Size: " + size);
+            area.setFont(Font.font("Consolas", FontWeight.NORMAL, size));
         }
     }
 }
