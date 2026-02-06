@@ -30,24 +30,23 @@ import javafx.beans.value.ObservableValue;
 
 import java.io.File;
 import java.util.Optional;
+import java.time.LocalTime;
+import java.time.LocalDate;
 
 import ghost.ognotepad.backend.*;
 
 
 //TODO: FEATURES TO ADD 
 /*
- *  1. Overall refactor
- *  2. Fix it so it starts in the middle
- *  3. Add to edit => {Select All, Print Time, Find, Paste, Copy, Cut}
- *  4. Add to view => {Toggle Line break horizontal}
- *  5. Open new Window 
- *  6. Proper undo/redo
- *  7. Settings page (Fonts, DarkMode, LightMode, Default Width, Default Height, Default font size)
- *  8. Dark/light mode switcher
- *  9. Fullscreen (doesn't work)
- *  10. Config file to store settings
- *  11. Print File
- *  ?. New Files open in a new Tab maybe????
+ *  Fix it so it starts in the middle
+ *  Implement Find
+ *  Open new Window 
+ *  Settings page (Fonts, DarkMode, LightMode, Default Width, Default Height, Default font size)
+ *  Dark/light mode switcher
+ *  Fullscreen (doesn't work)
+ *  Config file to store settings
+ *  Print File
+ *  New Files open in a new Tab maybe????
  */
 
 public class GUI {
@@ -87,7 +86,6 @@ public class GUI {
         root.getChildren().addAll(topBar, fileLabel, area, bottomBar);
 
         Scene scene = new Scene(root, defaultWidth, defaultHeight);
-        //this is for the zooming with scroll wheel
         scene.addEventFilter(ScrollEvent.SCROLL, event -> {
             if (event.isControlDown()) {
                 if (event.getDeltaY() > 0) {
@@ -116,7 +114,7 @@ public class GUI {
         area.setPrefWidth(defaultWidth);
         area.setPadding(new Insets(0, 10, 5, 0));
         area.setStyle(
-            "-fx-focus-color: -fx-control-inner-background ; -fx-faint-focus-color: -fx-control-inner-background ;"
+            "-fx-focus-color: -fx-control-inner-background; -fx-faint-focus-color: -fx-control-inner-background;"
         );
         area.setFont(Font.font("Consolas", FontWeight.NORMAL, fontSize));
         area.caretPositionProperty().addListener(this::updateBottomBar);
@@ -149,24 +147,102 @@ public class GUI {
 
         file.getItems().addAll(newFile, newWindow, save, open);
 
+
         Menu edit = new Menu("Edit");
+        MenuItem selectAll = new MenuItem("Select all");
+        selectAll.setOnAction(event -> {
+            area.selectAll();
+        });
+        selectAll.setAccelerator(new KeyCodeCombination(KeyCode.A, KeyCombination.SHIFT_DOWN));
+
+        MenuItem printTime = new MenuItem("Time"); 
+        printTime.setOnAction(event-> {
+            area.insertText(area.getCaretPosition(), LocalTime.now().toString().substring(0, 8));
+        });
+        printTime.setAccelerator(new KeyCodeCombination(KeyCode.T, KeyCombination.CONTROL_DOWN));
+
+        MenuItem printDate = new MenuItem("Date"); 
+        printDate.setOnAction(event-> {
+            area.insertText(area.getCaretPosition(), LocalDate.now().toString());
+        });
+        printDate.setAccelerator(new KeyCodeCombination(KeyCode.D, KeyCombination.CONTROL_DOWN));
+        
+        MenuItem printDateTime = new MenuItem("DateTime"); 
+        printDateTime.setOnAction(event-> {
+            String dateTime = LocalDate.now().toString() + LocalTime.now().toString().substring(0, 8);
+            area.insertText(area.getCaretPosition(), dateTime);
+        });
+        printDateTime.setAccelerator(new KeyCodeCombination(KeyCode.R, KeyCombination.CONTROL_DOWN));
+
+        MenuItem find = new MenuItem("Find");
+        find.setOnAction(event -> {
+            find();
+        });
+        find.setAccelerator(new KeyCodeCombination(KeyCode.F, KeyCombination.CONTROL_DOWN));
+        
+        MenuItem paste = new MenuItem("Paste");
+        paste.setOnAction(event -> {
+            area.paste();
+        });
+        paste.setAccelerator(new KeyCodeCombination(KeyCode.V, KeyCombination.CONTROL_DOWN));
+        
+        MenuItem copy = new MenuItem("Copy");
+        copy.setOnAction(event -> {
+            area.copy();
+        });
+        copy.setAccelerator(new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN));
+
+        MenuItem cut = new MenuItem("Cut");
+        cut.setOnAction(event -> {
+            area.cut();
+        });
+        cut.setAccelerator(new KeyCodeCombination(KeyCode.X, KeyCombination.CONTROL_DOWN));
+
+        MenuItem undo = new MenuItem("Undo");
+        undo.setOnAction(event -> {
+            area.undo();
+        });
+        undo.setAccelerator(new KeyCodeCombination(KeyCode.Z, KeyCombination.CONTROL_DOWN));
+
+        MenuItem redo = new MenuItem("Redo");
+        redo.setOnAction(event -> {
+            area.redo();
+        });
+        redo.setAccelerator(new KeyCodeCombination(KeyCode.Y, KeyCombination.CONTROL_DOWN));
+
+        edit.getItems().addAll(selectAll, printTime, printDate, printDateTime, find, paste, copy, cut, undo, redo);
+
+
         Menu view = new Menu("View");
         MenuItem zoom = new MenuItem("Zoom");
-        zoom.setAccelerator(new KeyCodeCombination(KeyCode.PAGE_UP, KeyCombination.CONTROL_DOWN));
         zoom.setOnAction(event -> { 
             zoomIn(); 
         });
+        zoom.setAccelerator(new KeyCodeCombination(KeyCode.PAGE_UP, KeyCombination.CONTROL_DOWN));
+
         MenuItem unzoom = new MenuItem("Zoom out");
-        unzoom.setAccelerator(new KeyCodeCombination(KeyCode.PAGE_DOWN, KeyCombination.CONTROL_DOWN));
         unzoom.setOnAction(event -> {
             zoomOut();
         });
+        unzoom.setAccelerator(new KeyCodeCombination(KeyCode.PAGE_DOWN, KeyCombination.CONTROL_DOWN));
         
-        view.getItems().addAll(zoom, unzoom);
-        parent.getMenus().addAll(file, edit, view);
+        MenuItem toggleBreak = new MenuItem("Toggle break");
+        toggleBreak.setOnAction(event -> {
+            area.setWrapText(true);
+        });
 
-        VBox box = new VBox();
-        box.setSpacing(10);
+        MenuItem toggleNoBreak = new MenuItem("Toggle no break");
+        toggleNoBreak.setOnAction(event -> {
+            area.setWrapText(false);
+        });
+        view.getItems().addAll(zoom, unzoom, toggleBreak, toggleNoBreak);
+
+
+        Menu options = new Menu("Options");
+
+        parent.getMenus().addAll(file, edit, view, options);
+
+        VBox box = new VBox(20);
         box.setPadding(new Insets(0, 5, 5, 0));
         box.setPrefWidth(defaultWidth);
         box.getChildren().add(parent);
@@ -310,5 +386,9 @@ public class GUI {
         //add a text so it updates the curosr size (doesnt do this when updating the font)
         area.setText(area.getText() + "");
         area.positionCaret(pos);
+    }
+
+    private void find() {
+
     }
 }
