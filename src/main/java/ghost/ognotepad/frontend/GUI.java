@@ -58,6 +58,7 @@ public class GUI {
         primaryStage.setTitle("OGNotepad");
 
         VBox root = new VBox();
+        fileLabel.setPadding(new Insets(0, 0, 0, 10));
         VBox topBar = createTopBar();
         HBox bottomBar = createBottomBar();
         VBox.setVgrow(area, Priority.ALWAYS);
@@ -71,10 +72,8 @@ public class GUI {
         HBox box = new HBox();
         box.setPadding(new Insets(5, 0, 0, 10));
         box.setPrefWidth(defaultWidth);
-
         Label encoding = new Label("    UTF-8   ");
         box.getChildren().addAll(rowLabel, columnLabel, countLabel, encoding, sizeLabel);
-
         return box;
     }
 
@@ -153,12 +152,12 @@ public class GUI {
             a.getButtonTypes().setAll(save, cancel);
             Optional<ButtonType> result = a.showAndWait();
             if (result.isPresent()) {
-                //TODO: CHECK IF THE FILE HAS ACTUALLY BEEN SAVED
                 if (result.get() == save) {
-                    saveFile();
+                    if (saveFile()) {
+                        fileLabel.setText("");
+                        area.setText("");
+                    }
                 }
-                fileLabel.setText("");
-                area.setText("");
             }
         }
     }
@@ -170,23 +169,43 @@ public class GUI {
         return true;
     }
 
-    private void saveFile() {
+    private boolean saveFile() {
+        StringBuilder fullName = new StringBuilder();
+
         if (fileLabel.getText().length() < 1) {
             FileChooser chooser = new FileChooser();
             chooser.setTitle("Save File");
             File selectedFile = chooser.showSaveDialog(primaryStage);
 
             if (selectedFile != null) {
-                StringBuilder fullName = new StringBuilder(); 
                 fullName.append(selectedFile.getAbsolutePath());
                 if (!selectedFile.getName().contains(".")) {
                     fullName.append(".txt");
                 }
-                FileLogic.save(area.getText(), fullName.toString());
-                fileLabel.setText(fullName.toString());
+            }else {
+                return false;
             }
         } else {
-            FileLogic.save(area.getText(), fileLabel.getText());
+            fullName.append(fileLabel.getText());
+        }
+
+        Code code = FileLogic.save(area.getText(), fullName.toString());
+        switch (code) {
+            case Code.Success(String paylaod) -> {
+                fileLabel.setText(fullName.toString());
+                return true;
+            }
+            case Code.Error(String error) -> {
+                Alert a = new Alert(AlertType.ERROR);           
+                a.setTitle("Failed to save file");
+                a.setHeaderText("Could'nt save file: " + fullName);
+                a.setContentText("Error: " + error);
+                a.show();   
+                return false;
+            }
+            default -> {
+                return false;
+            }
         }
     }
 
@@ -194,10 +213,25 @@ public class GUI {
         FileChooser chooser = new FileChooser();
         chooser.setTitle("Save File");
         File selectedFile = chooser.showOpenDialog(primaryStage);
+
         if (selectedFile != null) {
-            fileLabel.setText(selectedFile.getAbsolutePath());
-            area.setText(FileLogic.load(fileLabel.getText()));
-            originalContent = area.getText();
+            Code code = FileLogic.load(selectedFile.getAbsolutePath());
+            switch (code) {
+                case Code.Success(String payload) -> {
+                    area.setText(payload);
+                    fileLabel.setText(selectedFile.getAbsolutePath());
+                    originalContent = area.getText();
+                }
+                case Code.Error(String error) -> {
+                    Alert a = new Alert(AlertType.ERROR);           
+                    a.setTitle("Failed to load file");
+                    a.setHeaderText("Could'nt load file: " + selectedFile.getAbsolutePath());
+                    a.setContentText("Error: " + error);
+                    a.show();
+                }
+                default -> {
+                }
+            }
         }
     }
 }
