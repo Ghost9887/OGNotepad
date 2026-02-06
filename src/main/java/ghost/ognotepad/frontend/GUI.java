@@ -30,12 +30,10 @@ public class GUI {
 
         final GridPane grid = createGrid();
         
-        TextArea userTextField = new TextArea();
-        grid.add(userTextField, 1, 1);
-        
         final Scene scene = new Scene(grid, width, height);
         primaryStage.setScene(scene);
         primaryStage.show();
+        primaryStage.centerOnScreen();
     }
 
     private GridPane createGrid() {

@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>ghost.ognotepad</groupId>
-    <artifactId>chess</artifactId>
+    <artifactId>ognotepad</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
