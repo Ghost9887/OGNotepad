@@ -41,8 +41,6 @@ import ghost.ognotepad.backend.*;
 
 //TODO: FEATURES TO ADD 
 /*
- *  Implement Find
- *  Open new Window 
  *  Settings page (Fonts, DarkMode, LightMode, Default Width, Default Height, Default font size)
  *  Dark/light mode switcher
  *  Config file to store settings
@@ -242,9 +240,9 @@ public class GUI {
         view.getItems().addAll(zoom, unzoom, toggleBreak, toggleNoBreak);
 
 
-        Menu options = new Menu("Options");
+        Menu settings = new Menu("Settings");
 
-        parent.getMenus().addAll(file, edit, view, options);
+        parent.getMenus().addAll(file, edit, view, settings);
 
         VBox box = new VBox(20);
         box.setPadding(new Insets(0, 5, 5, 0));
@@ -390,7 +388,6 @@ public class GUI {
         area.positionCaret(pos);
     }
 
-    
     private void find(int index, String lastWord) {
         TextInputDialog td = new TextInputDialog(lastWord);
         td.setHeaderText("Find sequence");
@@ -406,7 +403,6 @@ public class GUI {
                     index = 0;
                     pos = area.getText().indexOf(word, index);
                 }
-
                 area.selectRange(pos, pos + word.length());
                 find(pos + word.length(), word);
 
@@ -416,5 +412,4 @@ public class GUI {
             }
         }
     }
-
 }
