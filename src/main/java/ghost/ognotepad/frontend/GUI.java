@@ -33,6 +33,8 @@ import java.io.File;
 import java.util.Optional;
 import java.time.LocalTime;
 import java.time.LocalDate;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 import ghost.ognotepad.backend.*;
 
@@ -46,25 +48,26 @@ import ghost.ognotepad.backend.*;
  *  Config file to store settings
  *  Print File
  *  New Files open in a new Tab maybe????
+ *  when deleting with control the count doesnt get updated 
  */
 
 public class GUI {
 
+    private final int MIN_FONT_SIZE = 1;
+    private final int MAX_FONT_SIZE = 150;
     private final Stage primaryStage;
     private int defaultWidth = 800;
     private int defaultHeight = 600;
-    private int row = 0;
+    private int row = 1;
     private int column = 0;
     private int count = 0;
     private int fontSize = 12;
-
     private TextArea area = createTextArea();
-
     private Label rowLabel = new Label("Row: 1");
-    private Label columnLabel = new Label("Label: 0");
+    private Label columnLabel = new Label("Column: 0");
     private Label countLabel = new Label("Count: 0");
     private Label fontSizeLabel = new Label("Font Size: 12");
-
+    private Label breakLabel = new Label("'break'");
     private Label fileLabel = new Label("");
     private String originalContent = "";
 
@@ -78,6 +81,7 @@ public class GUI {
         VBox root = new VBox();
 
         fileLabel.setPadding(new Insets(0, 0, 0, 10));
+        breakLabel.setVisible(false);
 
         VBox topBar = createTopBar();
         HBox bottomBar = createBottomBar();
@@ -104,7 +108,7 @@ public class GUI {
         HBox box = new HBox(60);
         box.setPadding(new Insets(5, 0, 0, 10));
         box.setPrefWidth(defaultWidth);
-        box.getChildren().addAll(rowLabel, columnLabel, countLabel, fontSizeLabel);
+        box.getChildren().addAll(rowLabel, columnLabel, countLabel, fontSizeLabel, breakLabel);
         return box;
     }
 
@@ -123,7 +127,6 @@ public class GUI {
 
     private VBox createTopBar() {
         MenuBar parent = new MenuBar();
-
         Menu file = new Menu("File");
         MenuItem newFile = new MenuItem("New File");
         newFile.setOnAction(event -> {
@@ -175,7 +178,7 @@ public class GUI {
 
         MenuItem find = new MenuItem("Find");
         find.setOnAction(event -> {
-            find();
+            find(0, "");
         });
         find.setAccelerator(new KeyCodeCombination(KeyCode.F, KeyCombination.CONTROL_DOWN));
         
@@ -228,11 +231,13 @@ public class GUI {
         MenuItem toggleBreak = new MenuItem("Toggle break");
         toggleBreak.setOnAction(event -> {
             area.setWrapText(true);
+            breakLabel.setVisible(true);
         });
 
         MenuItem toggleNoBreak = new MenuItem("Toggle no break");
         toggleNoBreak.setOnAction(event -> {
             area.setWrapText(false);
+            breakLabel.setVisible(false);
         });
         view.getItems().addAll(zoom, unzoom, toggleBreak, toggleNoBreak);
 
@@ -339,7 +344,6 @@ public class GUI {
         FileChooser chooser = new FileChooser();
         chooser.setTitle("Open File");
         File selectedFile = chooser.showOpenDialog(primaryStage);
-
         if (selectedFile != null) {
             Code code = FileLogic.load(selectedFile.getAbsolutePath());
             switch (code) {
@@ -361,7 +365,7 @@ public class GUI {
     }
 
     private void zoomIn() {
-        if (fontSize < 150) {
+        if (fontSize < MAX_FONT_SIZE) {
             fontSize++;
             fontSizeLabel.setText("Font Size: " + fontSize);
             area.setFont(Font.font("Consolas", FontWeight.NORMAL, fontSize));
@@ -370,7 +374,7 @@ public class GUI {
     }
 
     private void zoomOut() {
-        if (fontSize > 1) {
+        if (fontSize > MIN_FONT_SIZE) {
             fontSize--;
             fontSizeLabel.setText("Font Size: " + fontSize);
             area.setFont(Font.font("Consolas", FontWeight.NORMAL, fontSize));
@@ -386,15 +390,31 @@ public class GUI {
         area.positionCaret(pos);
     }
 
-    private void find() {
-        TextInputDialog td = new TextInputDialog("Find");
-        td.setHeaderText("find word: ");
+    
+    private void find(int index, String lastWord) {
+        TextInputDialog td = new TextInputDialog(lastWord);
+        td.setHeaderText("Find sequence");
         Optional<String> res = td.showAndWait();
-
         if (res.isPresent()) {
-            if (area.getText().contains(res.get())) {
-                //implement
+            String word = res.get();
+            if (!word.equals(lastWord)) index = 0;
+            if (area.getText().contains(word)) {
+
+                int pos = area.getText().indexOf(word, index);
+
+                if (pos < 0) {
+                    index = 0;
+                    pos = area.getText().indexOf(word, index);
+                }
+
+                area.selectRange(pos, pos + word.length());
+                find(pos + word.length(), word);
+
+            }else {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION, "No matches");
+                alert.showAndWait();
             }
         }
     }
+
 }
