@@ -56,10 +56,13 @@ public class GUI {
     private final Stage primaryStage;
     private int defaultWidth = 800;
     private int defaultHeight = 600;
+    private int settingsDefaultWidth = 500;
+    private int settingsDefaultHeight = 350;
     private int row = 1;
     private int column = 0;
     private int count = 0;
-    private int fontSize = 12;
+    private int defaultFontSize = 12;
+    private int fontSize = defaultFontSize;
     private TextArea area = createTextArea();
     private Label rowLabel = new Label("Row: 1");
     private Label columnLabel = new Label("Column: 0");
@@ -241,6 +244,9 @@ public class GUI {
 
 
         Menu settings = new Menu("Settings");
+        MenuItem openSettings = new MenuItem("Open Settings");
+        openSettings.setOnAction(event -> showSettingsWindow());
+        settings.getItems().add(openSettings);
 
         parent.getMenus().addAll(file, edit, view, settings);
 
@@ -412,4 +418,31 @@ public class GUI {
             }
         }
     }
+
+    
+    private void showSettingsWindow() {
+        Stage settingsStage = new Stage();
+        settingsStage.setMinWidth(settingsDefaultWidth);
+        settingsStage.setMinHeight(settingsDefaultHeight);
+
+        VBox root = new VBox(20);
+        root.setPadding(new Insets(10));
+
+        Label lightModeLabel = new Label("Light mode");
+        Label darkModeLabel = new Label("Dark mode");
+        Label defaultWidthLabel = new Label("Default width: " + defaultWidth);
+        Label defaultHeightLabel = new Label("Default height: " + defaultHeight);
+        Label defaultFontSizeLabel = new Label("Default font size: " + defaultFontSize);
+
+        root.getChildren().addAll(
+            lightModeLabel, darkModeLabel, defaultWidthLabel, defaultHeightLabel, defaultFontSizeLabel
+        );
+        
+        
+        Scene scene = new Scene(root);
+        settingsStage.setTitle("Settings");
+        settingsStage.setScene(scene);
+        settingsStage.show();
+    }
+
 }
